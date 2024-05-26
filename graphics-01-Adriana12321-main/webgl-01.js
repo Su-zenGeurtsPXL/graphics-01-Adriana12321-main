@@ -116,19 +116,12 @@ function main() {
       new Matrix4().makeScale(controls.scale.x, controls.scale.y, 1)
     );
 
-    // Tell it to use our program (pair of shaders)
-    gl.useProgram(program);
+    // setup GLSL program
+    const program = new WebGLProgram(gl); //( NEW!)
 
-    // lookup uniforms
-    const matrixLocation = gl.getUniformLocation(program, "modelMatrix");
-    const colorLocation = gl.getUniformLocation(program, "color");
-
-    // set the uniforms
-    gl.uniformMatrix4fv(matrixLocation, false, matrix.elements); // Set the matrix.
-    gl.uniform3fv(
-      colorLocation,
-      new Float32Array([controls.color.r, controls.color.g, controls.color.b])
-    ); // Set the color.
+    program.use(); //( NEW!)
+    program.setUniform("modelMatrix", matrix); //( NEW!)
+    program.setUniform("color", controls.color); //( NEW!)
 
     triangleGeometry.draw(gl); //( NEW!)
     quadIndexedGeometry.draw(gl); //( NEW!)
