@@ -6,23 +6,27 @@ import { WebGLProgram } from "./gop/core/WebGLProgram.js";
 
 import GUI from "./gop/lil-gui/lil-gui.module.min.js";
 
-const vs = `#version 300 es
+var vs = `#version 300 es
 layout(location=0) in vec3 position;
+layout(location=1) in vec4 color; // RGBA (NEW)
 uniform mat4 modelMatrix;
-
+out vec4 v_color; // output to fs and interpolated by the rasterizer (NEW!)
 void main() {
-  gl_Position = modelMatrix * vec4( position, 1.0 );
+gl_Position = modelMatrix * vec4( position, 1.0 );
+v_color = color; // (NEW)
 }
 `;
 
-const fs = `#version 300 es
+var fs = `#version 300 es
 precision highp float;
 
 uniform vec3 color; // color input
 out vec4 fragColor; // fragment color output
 
+in vec4 v_color; // input from vertex shader (NEW)
+
 void main() {
-    fragColor = vec4( color, 1.0 ); // only assign the fragment color
+fragColor = vec4( v_color.rgb, 1.0 ); // only assign the fragment color (NEW)
 }
 `;
 
@@ -79,8 +83,12 @@ function main() {
 
   // Triangle Geometry
   const triangle = createBuffer(gl, [0.5, 1, 0, 0, 0, 0, 1, 0.3, 0]);
-  // Triangle Color Buffer - 3 vertices with 4 color components
-  const triangleColors = createBuffer(gl, [1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1]);
+
+  // triangle color rgba
+  const triangleColors = createBuffer(
+    gl,
+    [1, 0, 0, 1.0, 0, 1, 0, 1.0, 0, 0, 1, 1.0]
+  );
 
   // Set Geometry - Quad
   const quad = createBuffer(
@@ -105,10 +113,11 @@ function main() {
     1,
     3, // second triangle
   ]);
-  // Quad Color Buffer - 4 vertices with 4 color components
+
+  // quad color rgba
   const quadColors = createBuffer(
     gl,
-    [1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 1, 1, 1, 1]
+    [1, 0, 0, 1.0, 0, 1, 0, 1.0, 0, 0, 1, 1.0, 1, 1, 1, 1.0]
   );
 
   // setup GLSL program
@@ -163,16 +172,15 @@ function main() {
       new Float32Array([controls.color.r, controls.color.g, controls.color.b])
     ); // Set the color.
 
-    // triangle - bind buffer and set attribute pointers
-    useBuffer(gl, triangle, 3, positionLocation);
-    // triangle - draw the geometry.
+    // triangle with color
+    useBuffer(gl, triangle, 3, 0);
+    useBuffer(gl, triangleColors, 4, 1); // (NEW)
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-    // quad - bind buffer and set attribute pointers (CHANGED!)
-    useBuffer(gl, quadIndexed, 3, positionLocation);
-    // quad - bind the index buffer (NEW!)
+    // quad with color
+    useBuffer(gl, quadIndexed, 3, 0);
+    useBuffer(gl, quadColors, 4, 1); // (NEW)
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indices);
-    // quad - draw the indexed geometry (NEW!)
     gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
   }
 
